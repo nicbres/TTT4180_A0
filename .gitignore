@@ -1,0 +1,6 @@
+# Ignore pdfs
+*.pdf
+
+# Ignore Recordings
+Recordings/*
+
