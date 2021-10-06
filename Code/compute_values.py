@@ -170,6 +170,7 @@ def power_spectrum(
         np.fft.fft(
             a=sampled_data,
             n=len(sampled_data),
+            norm="forward",
         ),
     )**2
 
@@ -183,7 +184,7 @@ def power_time_domain(
 def power_frequency_domain(
     power_spectrum,
 ):
-    return np.sum(power_spectrum)/len(power_spectrum)
+    return np.sum(power_spectrum)*len(power_spectrum)
 
 
 def sum_spl(
@@ -196,7 +197,7 @@ def power_spectrum_to_db(
     power_spectrum,
     pressure_reference=Recording.pressure_reference,
 ):
-    amplitude_spectrum = np.sqrt(power_spectrum)/len(power_spectrum)
+    amplitude_spectrum = np.sqrt(power_spectrum)
     return 20*np.log10(amplitude_spectrum/pressure_reference)
 
 
