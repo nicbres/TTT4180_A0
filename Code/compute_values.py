@@ -32,24 +32,54 @@ third_octave_csv = code_path / 'third_octave_frequencies.csv'
 
 
 class Recording:
+    pressure_reference = 20*10**(-6)
+    pressure_calibrator = 10**(94/20)*pressure_reference
+
     def __init__(
         self,
         ref_pre_path: pathlib.Path,
         rec_data_path: pathlib.Path,
         ref_post_path: pathlib.Path,
     ):
+        # Read Data
         logging.info("------------- Reading WAV files -------------")
         samplerate, ref_pre = wav.read(ref_pre_path)
         logging.info(f"ref_pre samplerate: {samplerate}")
         samplerate,  ref_post = wav.read(ref_post_path)
         logging.info(f"ref_post samplerate: {samplerate}")
-        samplerate, rec_data = wav.read(rec_data_path)
+        samplerate, recording = wav.read(rec_data_path)
         logging.info(f"rec samplerate: {samplerate}")
-        logging.info("------------------- Done -------------------")
+
         self._samplerate = samplerate
         self._ref_pre = ref_pre
         self._ref_post = ref_post
-        self._rec_data = rec_data
+        self._recording = recording
+
+        # Calculate RMS in Digital Time Domain
+        logging.info("--------------- Digital RMS -----------------")
+        digital_ref_rms_pre = root_mean_square(
+            sampled_data=self._ref_pre,
+        )
+        logging.info(f"Digital RMS Pre: {digital_ref_rms_pre:.3e}")
+
+        digital_ref_rms_post = root_mean_square(
+            sampled_data=self._ref_post,
+        )
+        logging.info(f"Digital RMS Post: {digital_ref_rms_post:.3e}")
+
+        # Calibrate measured signal
+        logging.info("----------- Calibration Factor --------------")
+        self._cal_factor_pre = calibration_factor(
+            digital_ref_rms=digital_ref_rms_pre,
+            physical_ref_rms=self.pressure_calibrator,
+        )
+        logging.info(f"Calibration Factor Pre: {self._cal_factor_pre:.3e}")
+
+        self._cal_factor_post = calibration_factor(
+            digital_ref_rms=digital_ref_rms_post,
+            physical_ref_rms=self.pressure_calibrator,
+        )
+        logging.info(f"Calibration Factor Post: {self._cal_factor_post:.3e}")
 
     @property
     def reference_pre(self):
@@ -61,11 +91,25 @@ class Recording:
 
     @property
     def recording(self):
-        return self._rec_data
+        return self._recording
 
     @property
     def samplerate(self):
         return self._samplerate
+
+    @property
+    def calibrated_pre(self):
+        """
+        Returns the pressure p[n] calibrated with the reference pre recording
+        """
+        return self._recording*self._cal_factor_pre
+
+    @property
+    def calibrated_post(self):
+        """
+        Returns the pressure p[n] calibrated with the reference post recording
+        """
+        return self._recording*self._cal_factor_post
 
 
 def root_mean_square(
