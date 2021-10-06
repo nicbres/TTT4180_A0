@@ -11,22 +11,16 @@ import scipy.signal as sig
 logging.basicConfig(level=logging.INFO)
 
 ntnu_dir_path = pathlib.Path('/home') / 'nbresina' / 'Documents' / 'NTNU'
-recordings_path = ntnu_dir_path / 'TechnicalAcoustics' / 'Assignments' / '0' / 'Recordings'
+assignment_path = ntnu_dir_path / 'TechnicalAcoustics' / 'Assignments' / '0'
 
+recordings_path = assignment_path / 'Recordings'
 samfundet_folder_path = recordings_path / 'Samfundet'
 samfundet_ref_pre_path = samfundet_folder_path / 'ZOOM0004_reference_pre' / 'ZOOM0004_Tr1.WAV'
 #samfundet_rec_path = samfundet_folder_path / 'ZOOM0007_samfundet' / 'ZOOM0007_Tr1.WAV'
 samfundet_rec_path = samfundet_folder_path / 'ZOOM0007_samfundet' / 'ZOOM0007_Noise_Rec_30min.wav'
 samfundet_ref_post_path = samfundet_folder_path / 'ZOOM0008_reference_post' / 'ZOOM0008_Tr1.WAV'
 
-#construction_folder_path = recordings_path / 'ConstructionSite'
-#construction_ref_pre_path = construction_folder_path / 'ZOOM0009_reference_pre' / 'ZOOM0009_Tr1.WAV'
-#construction_rec_path = construction_folder_path / 'ZOOM0010_construction_site' / 'ZOOM0010_Tr1.WAV'
-#construction_ref_post_path = construction_folder_path / 'ZOOM0011_reference_post' / 'ZOOM0011_Tr1.WAV'
-
-reference_pressure = 20*10**(-6)
-
-code_path = ntnu_dir_path / 'TechnicalAcoustics' / 'Assignments' / '0' / 'Code'
+code_path = assignment_path / 'Code'
 a_weights_csv = code_path / 'a_weights.csv'
 third_octave_csv = code_path / 'third_octave_frequencies.csv'
 
@@ -81,6 +75,13 @@ class Recording:
         )
         logging.info(f"Calibration Factor Post: {self._cal_factor_post:.3e}")
 
+        # Generate Window
+        self._window = sig.windows.get_window(
+            window=('kaiser', 4.0),
+            Nx=len(self.recording),
+            fftbins=False,
+        )
+
     @property
     def reference_pre(self):
         return self._ref_pre
@@ -111,6 +112,18 @@ class Recording:
         """
         return self._recording*self._cal_factor_post
 
+    @property
+    def window(self):
+        return self._window
+
+    @property
+    def windowed_calibrated_pre(self):
+        return self._recording*self._cal_factor_pre*self._window
+
+    @property
+    def windowed_calibrated_post(self):
+        return self._recording*self._cal_factor_post*self._window
+
 
 def root_mean_square(
     sampled_data,
@@ -119,8 +132,9 @@ def root_mean_square(
 
 def sound_pressure_level(
     pressure_rms,
+    pressure_reference=Recording.pressure_reference,
 ):
-    return 20*np.log10(pressure_rms/reference_pressure)
+    return 20*np.log10(pressure_rms/pressure_reference)
 
 
 def calculate_pressure(
@@ -180,9 +194,10 @@ def sum_spl(
 
 def power_spectrum_to_db(
     power_spectrum,
+    pressure_reference=Recording.pressure_reference,
 ):
     amplitude_spectrum = np.sqrt(power_spectrum)/len(power_spectrum)
-    return 20*np.log10(amplitude_spectrum/reference_pressure)
+    return 20*np.log10(amplitude_spectrum/pressure_reference)
 
 
 def read_csv(
@@ -193,7 +208,7 @@ def read_csv(
         reader = csv.DictReader(csvfile)
         for row in reader:
             csv_list.append(row)
-    return csv_list 
+    return csv_list
 
 
 def read_third_octave_band_csv(
@@ -214,7 +229,7 @@ def read_third_octave_band_csv(
 def read_a_weights_csv(
     csv_path,
 ):
-    a_weights = {} 
+    a_weights = {}
     with open(csv_path, newline='') as csvfile:
         reader = csv.DictReader(csvfile)
         for row in reader:
@@ -277,136 +292,75 @@ def add_a_weighting(
 
 
 if __name__ == '__main__':
-    samfundet_recording = Recording(
+    recording = Recording(
         ref_pre_path=samfundet_ref_pre_path,
         rec_data_path=samfundet_rec_path,
         ref_post_path=samfundet_ref_post_path,
     )
 
-    # Calculate pressure on calibrator
-    calibrator_pressure = 10**(94/20)*reference_pressure
-    logging.info(f"Calibrator pressure [Pa]: {calibrator_pressure:.4f}")
-
-    # Calculate calibration factor
-    logging.info("-------------- Digital RMS ----------------")
-    digital_ref_rms_pre = root_mean_square(
-        sampled_data=samfundet_recording.reference_pre,
-    )
-    logging.info(f"Digital RMS Pre: {digital_ref_rms_pre:.4f}")
-    digital_ref_rms_post = root_mean_square(
-        sampled_data=samfundet_recording.reference_post,
-    )
-    logging.info(f"Digital RMS Post: {digital_ref_rms_post:.4f}")
-
-    # Calibrate measured signal
-    cal_factor_pre = calibration_factor(
-        digital_ref_rms=digital_ref_rms_pre,
-        physical_ref_rms=calibrator_pressure,
-    )
-    cal_pressure_pre = cal_factor_pre*samfundet_recording.recording
-
-    cal_factor_post = calibration_factor(
-        digital_ref_rms=digital_ref_rms_post,
-        physical_ref_rms=calibrator_pressure,
-    )
-    cal_pressure_post = cal_factor_post*samfundet_recording.recording
-
     # Calculate calibrated RMS pressures
     logging.info("---------- Calibrated Pressure RMS ----------")
-    cal_pressure_rms_pre = root_mean_square(cal_pressure_pre)
+    cal_pressure_rms_pre = root_mean_square(recording.calibrated_pre)
     logging.info(
-        f"Pressure RMS calibrated with Pre: {cal_pressure_rms_pre:.4f} Pa",
+        f"Pressure RMS calibrated with Pre: {cal_pressure_rms_pre:.3f} Pa",
     )
-
-    cal_pressure_rms_post = root_mean_square(cal_pressure_post)
+    cal_pressure_rms_post = root_mean_square(recording.calibrated_post)
     logging.info(
-        f"Pressure RMS calibrated with Post: {cal_pressure_rms_post:.4f} Pa",
+        f"Pressure RMS calibrated with Post: {cal_pressure_rms_post:.3f} Pa",
     )
 
     # Calculate SPL
-    logging.info("------------ SPL -------------")
-    spl_pre = sound_pressure_level(
-        pressure_rms=cal_pressure_rms_pre,
-    )
-    logging.info(
-        f"SPL Rec with Pre: {spl_pre:.4f} dB",
-    )
-    spl_post = sound_pressure_level(
-        pressure_rms=cal_pressure_rms_post,
-    )
-    logging.info(
-        f"SPL Rec with Post: {spl_post:.4f} dB",
-    )
+    logging.info("------------- Calibrated SPL ----------------")
+    spl_pre = sound_pressure_level(pressure_rms=cal_pressure_rms_pre)
+    logging.info(f"SPL Rec with Pre: {spl_pre:.3f} dB")
+    spl_post = sound_pressure_level(pressure_rms=cal_pressure_rms_post)
+    logging.info(f"SPL Rec with Post: {spl_post:.3f} dB")
 
     # Calculate SPL for 1s Sequence
-    logging.info("--------- SPL 1s Sequence ---------")
+    logging.info("------ Calibrated SPL for 1s Sequence -------")
     cal_pressure_pre_short_1s = generate_short_series(
-        sampled_data=cal_pressure_pre,
+        sampled_data=recording.calibrated_pre,
         time_length=1,
-        sample_frequency=samfundet_recording.samplerate,
+        sample_frequency=recording.samplerate,
     )
     spl_pre_short_1s = sound_pressure_level(
         pressure_rms=root_mean_square(
             sampled_data=cal_pressure_pre_short_1s,
-        )
+        ),
     )
-    logging.info(f"SPL calibrated with Pre: {spl_pre_short_1s:.4f} dB")
+    logging.info(f"SPL calibrated with Pre: {spl_pre_short_1s:.3f} dB")
 
     # Calculate SPL for 0.125s Sequence
-    logging.info("--------- SPL 125ms Sequence ---------")
+    logging.info("------- Calibrated SPL 125ms Sequence -------")
     cal_pressure_pre_short_125ms = generate_short_series(
-        sampled_data=cal_pressure_pre,
+        sampled_data=recording.calibrated_pre,
         time_length=0.125,
-        sample_frequency=samfundet_recording.samplerate,
+        sample_frequency=recording.samplerate,
     )
     spl_pre_short_125ms = sound_pressure_level(
         pressure_rms=root_mean_square(
             sampled_data=cal_pressure_pre_short_125ms,
-        )
+        ),
     )
-    logging.info(f"SPL calibrated with Pre: {spl_pre_short_125ms:.4f} dB")
+    logging.info(f"SPL calibrated with Pre: {spl_pre_short_125ms:.3f} dB")
 
     # Generate Windowed Signals
-    """
-    cal_pressure_pre = generate_short_series(
-        sampled_data=cal_pressure_pre,
-        time_length=60,
-        sample_frequency=samfundet_recording.samplerate,
-    )
-    logging.info("--------- SPL 60s Sequence ---------")
-    spl_pre_short_60s = sound_pressure_level(
-        pressure_rms=root_mean_square(
-            sampled_data=cal_pressure_pre,
-        )
-    )
-    logging.info(f"SPL calibrated with Pre: {spl_pre_short_60s:.4f} dB")
-    """
     window = sig.windows.get_window(
         window=('kaiser', 4.0),
-        Nx=len(cal_pressure_pre),
+        Nx=len(recording.calibrated_pre),
         fftbins=False,
     )
-    windowed_cal_pressure_pre = window*cal_pressure_pre
-    """
-    spl_pre_short_60s_windowed = sound_pressure_level(
-        pressure_rms=root_mean_square(
-            sampled_data=windowed_cal_pressure_pre,
-        )
-    )
-    logging.info(f"SPL windowed calibrated with Pre: {spl_pre_short_60s_windowed:.4f} dB")
-    """
 
     # Calculate FFT
-    power_spectrum_pre = power_spectrum(cal_pressure_pre)
-    power_spectrum_pre_windowed = power_spectrum(windowed_cal_pressure_pre)
-
-    power_spectrum_pre_freq = np.fft.fftfreq(
-        d=1/samfundet_recording.samplerate,
+    power_spectrum_pre = power_spectrum(recording.calibrated_pre)
+    power_spectrum_pre_windowed = power_spectrum(recording.windowed_calibrated_pre)
+    power_spectrum_frequencies = np.fft.fftfreq(
+        d=1/recording.samplerate,
         n=len(power_spectrum_pre),
     )
 
-    power_time_domain_ = power_time_domain(cal_pressure_pre)
-    power_time_domain_windowed = power_time_domain(windowed_cal_pressure_pre)
+    power_time_domain_ = power_time_domain(recording.calibrated_pre)
+    power_time_domain_windowed = power_time_domain(recording.windowed_calibrated_pre)
     power_freq_domain = power_frequency_domain(
         power_spectrum=power_spectrum_pre,
     )
@@ -414,18 +368,18 @@ if __name__ == '__main__':
         power_spectrum=power_spectrum_pre_windowed,
     )
 
-    logging.info("------------ Power Values -------------")
-    logging.info(f"Power in Time Domain: {power_time_domain_:.4f}")
-    logging.info(f"Power in Time Domain Windowed: {power_time_domain_windowed:.4f}")
-    logging.info(f"Power in Frequency Domain: {power_freq_domain:.4f}")
-    logging.info(f"Power in Frequency Domain Windowed: {power_freq_domain_windowed:.4f}")
+    logging.info("--------------- Power Values ----------------")
+    logging.info(f"Power in Time Domain: {power_time_domain(recording.calibrated_pre):.3f}")
+    logging.info(f"Power in Time Domain Windowed: {power_time_domain_windowed:.3f}")
+    logging.info(f"Power in Frequency Domain: {power_freq_domain:.3f}")
+    logging.info(f"Power in Frequency Domain Windowed: {power_freq_domain_windowed:.3f}")
 
     # Calculate SPL from Frequency Domain
     spl_freq = sum_spl(power_spectrum_to_db(power_spectrum_pre))
     spl_freq_windowed = sum_spl(power_spectrum_to_db(power_spectrum_pre_windowed))
-    logging.info("------- SPL from Frequency Domain --------")
-    logging.info(f"SPL: {spl_freq:.4f} dB")
-    logging.info(f"SPL windowed: {spl_freq_windowed:.4f} dB")
+    logging.info("--------- SPL from Frequency Domain ---------")
+    logging.info(f"SPL: {spl_freq:.3f} dB")
+    logging.info(f"SPL windowed: {spl_freq_windowed:.3f} dB")
 
     # Calculate Third Octave Band
     third_octave_frequencies = read_third_octave_band_csv(
@@ -434,11 +388,11 @@ if __name__ == '__main__':
     third_octave_mid_frequencies = [f['f_mid'] for f in third_octave_frequencies]
     third_octave_spl = generate_third_octave(
         power_spectrum_db=power_spectrum_to_db(power_spectrum_pre),
-        power_spectrum_frequencies=power_spectrum_pre_freq,
+        power_spectrum_frequencies=power_spectrum_frequencies,
         third_octave_frequencies=third_octave_frequencies,
     )
-    logging.info("------- SPL from Third Octave Bands --------")
-    logging.info(f"SPL: {sum_spl(third_octave_spl):.4f} dB")
+    logging.info("-------- SPL from Third Octave Bands --------")
+    logging.info(f"SPL: {sum_spl(third_octave_spl):.3f} dB")
 
     # Calculate A-Weighted Third Octave Band
     a_weights = read_a_weights_csv(
@@ -450,20 +404,15 @@ if __name__ == '__main__':
         third_octave_frequencies=third_octave_mid_frequencies,
         a_weights=a_weights,
     )
-    third_octave_a_weighted_spl_pos = sum_spl(third_octave_a_weighted_spectrum)
-    third_octave_a_weighted_spl = sum_spl(np.array([
-        third_octave_a_weighted_spl_pos,
-        third_octave_a_weighted_spl_pos,
-    ]))
-    logging.info("------- A-weighted SPL from Third Octave Bands --------")
-    logging.info(f"SPL: {sum_spl(third_octave_a_weighted_spl):.4f} dB")
+    third_octave_a_weighted_spl = sum_spl(third_octave_a_weighted_spectrum)
+    logging.info("--- A-weighted SPL from Third Octave Bands --")
+    logging.info(f"SPL: {sum_spl(third_octave_a_weighted_spl):.3f} dB")
 
-
-"""
+    """
     # Plotting
     fig, axs = plt.subplots(3,1)
-    #axs[0].plot(power_spectrum_pre_freq, power_spectrum_to_db(power_spectrum_pre))
-    #axs[0].plot(power_spectrum_pre_freq, power_spectrum_pre)
+    #axs[0].plot(power_spectrum_frequencies, power_spectrum_to_db(power_spectrum_pre))
+    #axs[0].plot(power_spectrum_frequencies, power_spectrum_pre)
     #axs[0].set_yscale("log")
     #axs[0].set_xscale("log")
     axs[2].plot(third_octave_mid_frequencies, third_octave_a_weighted_spectrum, 'o')
@@ -473,5 +422,5 @@ if __name__ == '__main__':
     axs[1].set_yscale("log")
     axs[1].set_xscale("log")
     plt.show()
-"""
+    """
 
