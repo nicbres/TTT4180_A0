@@ -29,7 +29,7 @@
 \evensidemargin\oddsidemargin \hoffset-22.4mm \voffset-28.4mm
 \topmargin0pt \headheight20mm \headsep4mm \topskip0mm
 \footskip17.5mm \columnsep7mm \arraycolsep2pt \parindent10pt
-\renewcommand{\abstractname}{Summary} 
+\renewcommand{\abstractname}{Summary}
 
 \begin{document}
 
@@ -41,28 +41,73 @@ nicholdb@stud.ntnu.no}
 \maketitle\thispagestyle{empty}
 
 \begin{abstract}
-    This report provides a description of the setup used and a discussion of the results gathered during the 
-    recording assignement for the Technical Acoustics course.
-    It will describe the equipment used for this task and the environment in which the recording took place.
-    Then the results are presented with a following discussion thereof.
+This report provides a description of the setup used and a discussion of the results gathered during the
+recording assignement for the Technical Acoustics course.
+It will describe the equipment used for this task and the environment in which the recording took place.
+Then the results are presented with a following discussion thereof.
 \end{abstract}
 
 \section{Recording Setup}
 \subsection{Site}
-    The site chosen for this assignment was the intersection by Studentersamfundet, with the main sound source
-    being cars and traffic noise in general.
-    % TODO insert coordinates as reference
+The site chosen for this assignment was the intersection by Studentersamfundet, where the main sound source
+are cars or traffic noise in general.
+% TODO insert coordinates as reference
 
-    The microphone was setup pointing directly to the intersection, where to closest point of sound generation
-    was roughly $4\textrm{m}$ away. Though some of the sounds recorded are from sources with a distance $30\textrm{m}$ and with 
-    respect to the microphone.
+The microphone was setup pointing directly to the intersection, where to closest point of sound generation
+was roughly $4\textrm{m}$ away.
+Though some of the sounds recorded are from sources within a distance of $30\textrm{m}$ and more with respect
+to the microphone.
 
-    The recording took place on \date{Sunday, 12th September 2021} between \time{12:45} and \time{13:45}. The
-    weather was overcast with a slight wind, around $11^\circ\textrm{C}$, and no precipation.
+The recording took place on Sunday, 12th September 2021 between 12:45 and 13:45.
+The weather was overcast with a slight wind, with a temperature of  around $11^\circ\textrm{C}$,
+and no precipation.
 
 \subsection{Soundscape}
+The main component in the traffic noise is the sound the tires emit while driving.
+This is a steady sound for which the intensity increases mostly with travelling speed of the vehicle, if we
+neglect the tire type and condition.
+
+In addition to that there's the rumbling noise of combustion engines.
+The major contributors to the perceived loudness of their sound are the size of the cylinders, the RPMs, and
+the attenuation from the exhaust pipes.
+
+Afformentioned would likely be categorized as low-frequency noise, especially when the cars are driving slow
+with low RPMs.
+Which is the case for a lot of the passing vehicles in the recording.
+Occasionally there are also mid/high-frequency sounds, like the screeching of brakes or the honking of car horns.
 
 \subsection{Equipment}
+The main setup was a handheld recorder with an external microphone on a stand connected by cable.
+
+The microphone used was a Behringer ECM8000 condenser microphone.
+Eventhough the wind was not strong, the wind screen was used preventively.
+
+The external microphone was connected to the input of the digital recorder Zoom H5 with an XLR cable.
+The recorder was set to a sampling rate of $48\textrm{kHz}$ with 24-bit resolution.
+
+For the calibration of the recording a sound source was used, that provides 94dB at $1\textrm{kHz}$.
+The gain of the recorder was then set to roughly $-6\textrm{dB}$ with the given calibration source.
+The sound picked up from this source was recorded to calculate the pressure of the actual recording.
+With the formula for sound pressure level (SPL)
+\begin{equation}
+    SPL = 20\log\left(\frac{p_{rms}}{p_0}\right)
+\end{equation}
+and the digital root-mean-square (RMS)
+\begin{equation}
+    x_{rms} = \sqrt{\frac{1}{N}\sum x^2\left[n\right]}
+\end{equation}
+a scaling factor can be calculated, which will result in the actual pressure values in Pascal.
+This can then be expressed as
+\begin{equation}
+    p\left[n\right] = \frac{p_{rms,cal}}{x_{rms,cal}}\cmult x\left[n\right]\textrm{,}
+\end{equation}
+where $p_{rms,cal}$ and $x_{rms,cal}$ are the RMS values of the calibrator recording, in Pascal and digital
+domain respectively, and $x\left[n\right]$ are the digital values from the 24-bit WAV-file recording.
+
+Although the recorder was transported in the provided hard case for protection, the position of the analog gain
+knob changed from the calibration before and after the recording.
+This results in some uncertainity of the calculated SPLs, which will be further adressed in the discussion
+section.
 
 \section{Results}
 \subsection{Languages}
