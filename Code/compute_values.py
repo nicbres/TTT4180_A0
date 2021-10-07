@@ -18,6 +18,8 @@ samfundet_folder_path = recordings_path / 'Samfundet'
 samfundet_ref_pre_path = samfundet_folder_path / 'ZOOM0004_reference_pre' / 'ZOOM0004_Tr1.WAV'
 #samfundet_rec_path = samfundet_folder_path / 'ZOOM0007_samfundet' / 'ZOOM0007_Tr1.WAV'
 samfundet_rec_path = samfundet_folder_path / 'ZOOM0007_samfundet' / 'ZOOM0007_Noise_Rec_30min.wav'
+#samfundet_rec_path = samfundet_folder_path / 'ZOOM0007_samfundet' / 'ZOOM0007_Noise_Rec_10min.wav'
+#samfundet_rec_path = samfundet_folder_path / 'ZOOM0007_samfundet' / 'ZOOM0007_Noise_Rec_3min.wav'
 samfundet_ref_post_path = samfundet_folder_path / 'ZOOM0008_reference_post' / 'ZOOM0008_Tr1.WAV'
 
 code_path = assignment_path / 'Code'
@@ -201,6 +203,33 @@ def power_spectrum_to_db(
     return 20*np.log10(amplitude_spectrum/pressure_reference)
 
 
+def combine_power_spectrum(
+    power_spectrum,  # dB
+    power_spectrum_frequencies,
+):
+    """
+    Combines constant bandwidth spectrum to 1Hz bands.
+    """
+    positive_power_spectrum_frequencies = power_spectrum_frequencies[0:len(power_spectrum_frequencies)//2-1]
+    power_spectrum_combined = [power_spectrum[0]]
+    power_spectrum_combined_frequencies = np.arange(0,24000)
+
+    lower_index = 1
+    for combined_freq in power_spectrum_combined_frequencies[1:]:
+        temp_spls = []
+        for index, freq in enumerate(positive_power_spectrum_frequencies[lower_index:]):
+            if freq < combined_freq:
+                temp_spls.append(power_spectrum[lower_index + index])
+            else:
+                lower_index = lower_index + index
+                break
+        power_spectrum_combined.append(sum_spl(np.array([temp_spls])))
+
+    power_spectrum_combined = np.array(power_spectrum_combined) + 3  # add 3dB for adding negative spectrum
+
+    return power_spectrum_combined_frequencies, power_spectrum_combined
+
+
 def read_third_octave_band_csv(
     csv_path,
 ):
@@ -252,19 +281,19 @@ def generate_third_octave(
     logging.debug(f"Highest Index used: {indexes[-1]['upper_index']}")
 
     # Combine ranges in power spectrum to form third octave band
-    third_octave_spl = []
+    third_octave_spectrum = []
     for index in indexes:
         positive_spl = sum_spl(
             spls=power_spectrum_db[index['lower_index']:index['upper_index']],
         )
         negative_spl = positive_spl
-        third_octave_spl.append(
+        third_octave_spectrum.append(
             sum_spl(
                 spls=np.array([positive_spl, negative_spl]),
             )
         )
 
-    return np.array(third_octave_spl)
+    return np.array(third_octave_spectrum)
 
 
 def add_a_weighting(
@@ -279,6 +308,35 @@ def add_a_weighting(
         )
 
     return np.array(a_weighted_spectrum)
+
+
+def generate_plot(
+    power_spectrum_db,  # dB
+    power_spectrum_frequencies,
+    third_octave_spectrum,  # dB
+    a_weighted_third_octave_spectrum,  # dB
+    third_octave_spectrum_frequencies,
+):
+    fig, ax = plt.subplots(1,1)
+
+    freqs, spectrum = combine_power_spectrum(
+        power_spectrum=power_spectrum_db,
+        power_spectrum_frequencies=power_spectrum_frequencies,
+    )
+
+    ax.plot(freqs, spectrum, label="FFT dB")
+    ax.step(third_octave_spectrum_frequencies, third_octave_spectrum, where="mid", label="1/3 dB")
+    ax.step(third_octave_spectrum_frequencies, a_weighted_third_octave_spectrum, where="mid", label="1/3 dBA")
+    ax.set_xscale("log")
+    ax.set_xlabel("Frequency [Hz]")
+    ax.set_ylabel("Relative SPL [dB]")
+    ax.set_xlim(1,24000)
+    ax.legend()
+    ax.grid()
+    logging.info("------------------ Plotting -----------------")
+    logging.info("Close to plot to continue")
+    plt.show()
+
 
 
 if __name__ == '__main__':
@@ -376,13 +434,13 @@ if __name__ == '__main__':
         csv_path=third_octave_csv,
     )
     third_octave_mid_frequencies = [f['f_mid'] for f in third_octave_frequencies]
-    third_octave_spl = generate_third_octave(
+    third_octave_spectrum = generate_third_octave(
         power_spectrum_db=power_spectrum_to_db(power_spectrum_pre),
         power_spectrum_frequencies=power_spectrum_frequencies,
         third_octave_frequencies=third_octave_frequencies,
     )
     logging.info("-------- SPL from Third Octave Bands --------")
-    logging.info(f"SPL: {sum_spl(third_octave_spl):.3f} dB")
+    logging.info(f"SPL: {sum_spl(third_octave_spectrum):.3f} dB")
 
     # Calculate A-Weighted Third Octave Band
     a_weights = read_a_weights_csv(
@@ -390,7 +448,7 @@ if __name__ == '__main__':
     )
 
     third_octave_a_weighted_spectrum = add_a_weighting(
-        third_octave_db=third_octave_spl,
+        third_octave_db=third_octave_spectrum,
         third_octave_frequencies=third_octave_mid_frequencies,
         a_weights=a_weights,
     )
@@ -398,19 +456,13 @@ if __name__ == '__main__':
     logging.info("--- A-weighted SPL from Third Octave Bands --")
     logging.info(f"SPL: {sum_spl(third_octave_a_weighted_spl):.3f} dB")
 
-    """
-    # Plotting
-    fig, axs = plt.subplots(3,1)
-    #axs[0].plot(power_spectrum_frequencies, power_spectrum_to_db(power_spectrum_pre))
-    #axs[0].plot(power_spectrum_frequencies, power_spectrum_pre)
-    #axs[0].set_yscale("log")
-    #axs[0].set_xscale("log")
-    axs[2].plot(third_octave_mid_frequencies, third_octave_a_weighted_spectrum, 'o')
-    axs[2].set_yscale("log")
-    axs[2].set_xscale("log")
-    axs[1].plot(third_octave_mid_frequencies, third_octave_spl, 'o')
-    axs[1].set_yscale("log")
-    axs[1].set_xscale("log")
-    plt.show()
-    """
+    generate_plot(
+        power_spectrum_db=power_spectrum_to_db(power_spectrum_pre),  # dB
+        power_spectrum_frequencies=power_spectrum_frequencies,
+        third_octave_spectrum=third_octave_spectrum,  # dB
+        a_weighted_third_octave_spectrum=third_octave_a_weighted_spectrum,  # dB
+        third_octave_spectrum_frequencies=third_octave_mid_frequencies,
+    )
+
+    logging.info("------------------- Done --------------------")
 
