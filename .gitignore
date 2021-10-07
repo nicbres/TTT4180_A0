@@ -8,3 +8,9 @@ Recordings/*
 **/__pycache__/*
 **/venv/*
 
+# logs
+**/*.log
+
+# tex
+**/*.aux
+
