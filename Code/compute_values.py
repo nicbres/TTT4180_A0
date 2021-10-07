@@ -201,17 +201,6 @@ def power_spectrum_to_db(
     return 20*np.log10(amplitude_spectrum/pressure_reference)
 
 
-def read_csv(
-    csv_path,
-):
-    csv_list = []
-    with open(csv_path, newline='') as csvfile:
-        reader = csv.DictReader(csvfile)
-        for row in reader:
-            csv_list.append(row)
-    return csv_list
-
-
 def read_third_octave_band_csv(
     csv_path,
 ):
