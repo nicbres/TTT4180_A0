@@ -21,7 +21,7 @@
 \makeatletter\@ifundefined{date}{}{\date{}}
 \makeatother
 
-\markright{\hfill Kergomard {\em et al.}, p.\ }
+%\markright{\hfill Kergomard {\em et al.}, p.\ }
 \pagestyle{myheadings}
 
 \paperheight297mm \paperwidth210mm
@@ -29,7 +29,7 @@
 \evensidemargin\oddsidemargin \hoffset-22.4mm \voffset-28.4mm
 \topmargin0pt \headheight20mm \headsep4mm \topskip0mm
 \footskip17.5mm \columnsep7mm \arraycolsep2pt \parindent10pt
-\renewcommand{\abstractname}{Summary}
+\renewcommand{\abstractname}{Introduction}
 
 \begin{document}
 
@@ -47,8 +47,8 @@ It will describe the equipment used for this task and the environment in which t
 Then the results are presented with a following discussion thereof.
 \end{abstract}
 
-\section{Recording Setup}
-\subsection{Site}
+\section{Material and Methods}
+\subsection{Recording Site}
 The site chosen for this assignment was the intersection by Studentersamfundet, where the main sound source
 are cars or traffic noise in general.
 % TODO insert coordinates as reference
@@ -59,7 +59,7 @@ Though some of the sounds recorded are from sources within a distance of $30\tex
 to the microphone.
 
 The recording took place on Sunday, 12th September 2021 between 12:45 and 13:45.
-The weather was overcast with a slight wind, with a temperature of  around $11^\circ\textrm{C}$,
+The weather was overcast with a slight wind, a temperature of around $11^\circ\textrm{C}$,
 and no precipation.
 
 \subsection{Soundscape}
@@ -82,37 +82,136 @@ The main setup was a handheld recorder with an external microphone on a stand co
 The microphone used was a Behringer ECM8000 condenser microphone.
 Eventhough the wind was not strong, the wind screen was used preventively.
 
-The external microphone was connected to the input of the digital recorder Zoom H5 with an XLR cable.
+The external microphone was connected to the input of the digital recorder Zoom H5 (Serial No. 212698) with
+an XLR cable.
 The recorder was set to a sampling rate of $48\textrm{kHz}$ with 24-bit resolution.
 
-For the calibration of the recording a sound source was used, that provides 94dB at $1\textrm{kHz}$.
-The gain of the recorder was then set to roughly $-6\textrm{dB}$ with the given calibration source.
-The sound picked up from this source was recorded to calculate the pressure of the actual recording.
+The calibrator Brüel \& Kjær Type 4230 (Serial No. 1719650) was used for the generation of a reference recording.
+It provides 94dB at $1\textrm{kHz}$.
+With this calibration source the gain of the recorder was then set to roughly $-6\textrm{dB}$.
 With the formula for sound pressure level (SPL)
+
 \begin{equation}
     SPL = 20\log\left(\frac{p_{rms}}{p_0}\right)
 \end{equation}
+
 and the digital root-mean-square (RMS)
+
 \begin{equation}
     x_{rms} = \sqrt{\frac{1}{N}\sum x^2\left[n\right]}
 \end{equation}
-a scaling factor can be calculated, which will result in the actual pressure values in Pascal.
-This can then be expressed as
+
+a scaling factor can be calculated to transform the digital values to the pressure values in Pascal.
+This can be expressed as
+
 \begin{equation}
     p\left[n\right] = \frac{p_{rms,cal}}{x_{rms,cal}}\cmult x\left[n\right]\textrm{,}
 \end{equation}
-where $p_{rms,cal}$ and $x_{rms,cal}$ are the RMS values of the calibrator recording, in Pascal and digital
-domain respectively, and $x\left[n\right]$ are the digital values from the 24-bit WAV-file recording.
+
+where $p_{rms,cal}$ and $x_{rms,cal}$ are the RMS values of the calibrator recording
+and $x\left[n\right]$ are the digital values from the 24-bit WAV-file recording.
 
 Although the recorder was transported in the provided hard case for protection, the position of the analog gain
-knob changed from the calibration before and after the recording.
-This results in some uncertainity of the calculated SPLs, which will be further adressed in the discussion
+knob had changed from the calibration before and after the recording.
+This results in some uncertainity of the calculated SPLs, which is further adressed in the discussion
 section.
 
-\section{Results}
-\subsection{Languages}
+\subsection{Calibration}
 
-\subsection{Discussion}
+\subsection{Computation}
+
+\section{Results}
+The following results were produced from a $30\textrm{min}$ piece of the recording, unless stated otherwise.
+The values of interest were computed using the programming language Python.
+Due to difference in the gains before and after the recording, the values are given with a $pre$ and $post$ suffix,
+indicating calibration with the reference before and after recording respectively.
+
+\begin{description}
+\item[SPL total] is calculated using the RMS values of the recording.
+
+\begin{equation}
+\begin{align}
+    L_{p,pre} & = 74.3 \textrm{ dB} \\
+    L_{p,post} & = 75.1 \textrm{ dB} \\
+\end{align}
+\end{equation}
+
+\item[SPL for sequences] are calculated for the time constants of $1\textrm{s}$ and $125\textrm{ms}$.
+
+\begin{equation}
+\begin{align}
+    L_{eq,1s,pre} & = 78.0 \textrm{ dB} \\
+    L_{eq,1s,post} & = \textrm{ dB} \\
+\end{align}
+\end{equation}
+
+\begin{equation}
+\begin{align}
+    L_{eq,125ms,pre} & = 75.5 \textrm{ dB} \\
+    L_{eq,125ms,post} & = \textrm{ dB} \\
+\end{align}
+\end{equation}
+
+\item[A-weighted SPL total] is computed from the third-octave-band power spectrum adjusted with the weighting
+    shown in Fig. \ref{fig:power_spectrum}
+
+\begin{equation}
+\begin{align}
+    L_{p,pre} & = 68.2 \textrm{ dBA} \\
+    L_{p,post} & = \textrm{ dBA} \\
+\end{align}
+\end{equation}
+
+\item[Power Spectrum] can be seen in Fig. \ref{fig:power_spectrum}.
+    It shows a spectrum with constant bandwidth of $1\textrm{Hz}$.
+    Summing up all the SPLs from that spectrum then results in
+
+\begin{equation}
+\begin{align}
+    L_{p,pre} & = 74.3 \textrm{ dB} \\
+    L_{p,post} & = \textrm{ dB} \\
+\end{align}
+\end{equation}
+
+\item[3rd octave bands] spectrum is also displayed in Fig. \ref{fig:power_spectrum}.
+    The total SPL calculated from this spectrum is given by
+
+\begin{equation}
+\begin{align}
+    L_{p,pre} & = 74.3 \textrm{ dB} \\
+    L_{p,post} & = \textrm{ dB} \\
+\end{align}
+\end{equation}
+
+\end{description}
+ 
+\begin{figure}[!h]
+    \centering
+    \includegraphics[width=75mm]{./Images/spectrum_plot_step.png}
+    \caption{Power Spectrum for the FFT, Third-Octave-Bands, and the A-weighted Third-Octave-Bands using the 
+    pre-recording reference for calibration}
+    \label{fig:power_spectrum}
+\end{figure}
+
+
+
+\section{Discussion}
+\subsection{Recording Site}
+% construction site activity + weather
+
+\subsection{Clipping}
+% 1 event of clipping due to incredibly loud motorcycle
+
+\subsection{Recorder}
+% Gain Knobs
+
+\subsection{Post-Processing}
+% length of signal -> RAM
+% scaling with 1/N caused by FFT
+
+\section{Conclusion}
+
+\section{References}
 
 \end{document}
 
