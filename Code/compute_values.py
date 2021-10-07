@@ -126,6 +126,14 @@ class Recording:
     def windowed_calibrated_post(self):
         return self._recording*self._cal_factor_post*self._window
 
+    @property
+    def calibration_factor_pre(self):
+        return self._cal_factor_pre
+
+    @property
+    def calibration_factor_post(self):
+        return self._cal_factor_post
+
 
 def root_mean_square(
     sampled_data,
@@ -310,6 +318,22 @@ def add_a_weighting(
     return np.array(a_weighted_spectrum)
 
 
+def get_max_spl(
+    signal,  # time-domain
+    samplerate,
+):
+    spectrum = power_spectrum_to_db(power_spectrum(signal))
+    freq = np.fft.fftfreq(
+        d=1/samplerate,
+        n=len(signal),
+    )
+    max_argument = np.argmax(spectrum)
+    max_freq = freq[max_argument]
+    max_spl = spectrum[max_argument]
+
+    return max_freq, max_spl
+
+
 def generate_plot(
     power_spectrum_db,  # dB
     power_spectrum_frequencies,
@@ -356,6 +380,21 @@ if __name__ == '__main__':
     logging.info(
         f"Pressure RMS calibrated with Post: {cal_pressure_rms_post:.3f} Pa",
     )
+
+
+    # Calculate dB for calibration signal
+    #logging.info("-------- SPL for calibration Signal ---------")
+    #freq, spl = get_max_spl(
+    #    signal=recording.reference_pre*recording.calibration_factor_pre,
+    #    samplerate=recording.samplerate,
+    #)
+    #logging.info(f"Pre: {spl:.3f} dB at {freq:.3f} Hz")
+    #freq, spl = get_max_spl(
+    #    signal=recording.reference_post*recording.calibration_factor_post,
+    #    samplerate=recording.samplerate,
+    #)
+    #logging.info(f"Post: {spl:.3f} dB at {freq:.3f} Hz")
+
 
     # Calculate SPL
     logging.info("------------- Calibrated SPL ----------------")
