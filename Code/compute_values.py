@@ -173,6 +173,27 @@ def generate_short_series(
     """
     return sampled_data[0:int(sample_frequency*time_length)-1]
 
+def generate_time_constant_spl_series(
+    calibrated_recording,
+    samplerate,
+    time_constant,
+):
+    """
+    Generation of sound level series with given time constant
+    """
+    new_indexes = (np.arange(len(calibrated_recording))/samplerate/time_constant).astype(int)
+    time_constant_spl = np.zeros(np.max(new_indexes))
+
+    for index in np.arange(np.max(new_indexes)):
+        args = np.argwhere(new_indexes == index)
+        time_constant_spl[index] = sound_pressure_level(
+            pressure_rms=root_mean_square(
+                sampled_data=calibrated_recording[args],
+            ),
+        )
+
+    return time_constant_spl
+
 
 def power_spectrum(
     sampled_data,
@@ -405,6 +426,26 @@ def calculate_short_sequence_spl(
     )
 
 
+def generate_spl_series_plot(
+    spl_series_a,
+    time_constant_a,
+    spl_series_b,
+    time_constant_b,
+):
+    fig, ax = plt.subplots(1,1)
+
+    time_stamps_a = np.arange(len(spl_series_a))*time_constant_a
+    time_stamps_b = np.arange(len(spl_series_b))*time_constant_b
+
+    ax.step(time_stamps_a, spl_series_a, where="mid", label=f"T={time_constant_a:.1e}")
+    ax.step(time_stamps_b, spl_series_b, where="mid", label=f"T={time_constant_b:.1e}")
+    ax.legend()
+    ax.grid()
+    logging.info("------------------ Plotting -----------------")
+    logging.info("Close plot to continue")
+    plt.show()
+
+
 def compute_values(
     calibrated_recording: np.array,
     samplerate: int,
@@ -418,6 +459,31 @@ def compute_values(
     cal_pressure_rms_pre = root_mean_square(calibrated_recording)
     spl_rms = sound_pressure_level(pressure_rms=cal_pressure_rms_pre)
     logging.info(f"SPL: {spl_rms:.3f} dB")
+
+    # Calculate SPL series with time constants
+    logging_info("-- Generate SPL Series with Time constants --")
+    time_contant_1 = 1
+    logging.info(f"------------ T={time_constant_1} -----------")
+    spl_series_1s = generate_time_constant_spl_series(
+        calibrated_recording=calibrated_recording,
+        samplerate=samplerate,
+        time_constant=1,
+    )
+
+    logging.info(f"------------ T={time_constant_2} -----------")
+    spl_series_125ms = generate_time_constant_spl_series(
+        calibrated_recording=calibrated_recording,
+        samplerate=samplerate,
+        time_constant=0.125,
+    )
+
+    if plot:
+        generate_spl_series_plot(
+            spl_series_a=spl_series_1s,
+            time_constant_a=1,
+            spl_series_b=spl_series_125ms,
+            time_constant_b=0.125,
+        )
 
     # Calculate Power Spectrum - Calibrated with Pre-Recording
     power_spectrum_pa = power_spectrum(calibrated_recording)
