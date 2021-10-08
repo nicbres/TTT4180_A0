@@ -38,6 +38,13 @@ if __name__ == "__main__":
         help='Add path to store log to file instead of stdout',
     )
 
+    parser.add_argument(
+        '--no-plot',
+        dest='plot',
+        action='store_false',
+        help='Add flag to avoid plotting',
+    )
+
     args = parser.parse_args()
 
     if args.run_all is None and args.input_file is None:
@@ -60,17 +67,15 @@ if __name__ == "__main__":
             compute_values.compute_values(
                 calibrated_recording=recording.calibrated_pre,
                 samplerate=recording.samplerate,
+                plot=args.plot,
             )
             logging.info("## Compute Values for Post-Recording Reference ##")
             compute_values.compute_values(
                 calibrated_recording=recording.calibrated_post,
                 samplerate=recording.samplerate,
-                plot=True,
+                plot=args.plot,
             )
 
         elif args.run_all:
-            compute_values.main()
-
-        
-
+            compute_values.main(plot=args.plot)
 

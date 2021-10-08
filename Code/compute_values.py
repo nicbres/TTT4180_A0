@@ -557,7 +557,9 @@ def compute_values(
     logging.info("=================== Done ====================")
 
 
-def main():
+def main(
+    plot=False,        
+):
     recording = Recording.from_recordings(
         recording_path=samfundet_rec_path,
         reference_pre_recording_path=samfundet_ref_pre_path,
@@ -568,7 +570,7 @@ def main():
     compute_values(
         calibrated_recording=recording.calibrated_pre,
         samplerate=recording.samplerate,
-        plot=False,
+        plot=plot,
     )
 
     logging.info("=== Values for Calibration Post-Recording ===")
@@ -576,7 +578,7 @@ def main():
     compute_values(
         calibrated_recording=recording.calibrated_post,
         samplerate=recording.samplerate,
-        plot=False,
+        plot=plot,
     )
 
     logging.info("======= Values for Short Sequences ========")
@@ -615,5 +617,5 @@ def main():
 
 if __name__ == '__main__':
     logging.basicConfig(level=logging.INFO)
-    main()
+    main(plot=False)
 
