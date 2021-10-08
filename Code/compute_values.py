@@ -138,21 +138,19 @@ class Recording:
 def root_mean_square(
     sampled_data,
 ):
+    """
+    Computes digital root mean square
+    """
     return np.sqrt(np.sum(sampled_data.astype(np.float64)**2)/len(sampled_data))
 
 def sound_pressure_level(
     pressure_rms,
     pressure_reference=Recording.pressure_reference,
 ):
+    """
+    Computes the sound pressure level (SPL)
+    """
     return 20*np.log10(pressure_rms/pressure_reference)
-
-
-def calculate_pressure(
-    digital_rec_rms,
-    digital_ref_rms,
-    calibrator_pressure,
-):
-    return digital_rec_rms/digital_ref_rms*calibrator_pressure
 
 
 def calibration_factor(
@@ -170,12 +168,19 @@ def generate_short_series(
     time_length,
     sample_frequency,
 ):
+    """
+    Return an array with a length that corresponds to the given
+    time_length with regard to the samplerate.
+    """
     return sampled_data[0:int(sample_frequency*time_length)-1]
 
 
 def power_spectrum(
     sampled_data,
 ):
+    """
+    Computes the power spectrum with forward scaling
+    """
     return np.abs(
         np.fft.fft(
             a=sampled_data,
@@ -188,18 +193,28 @@ def power_spectrum(
 def power_time_domain(
     sampled_data,
 ):
+    """
+    Computes the power from time/sample domain signal
+    """
     return np.sum(sampled_data**2)
 
 
 def power_frequency_domain(
     power_spectrum,
 ):
+    """
+    Computes the power from forward scaled power spectrum, which entails 
+    multiplying with the scaling factor due to |X(k)|^2
+    """
     return np.sum(power_spectrum)*len(power_spectrum)
 
 
 def sum_spl(
     spls: np.array,
 ):
+    """
+    Summing up of Sound Pressure Levels
+    """
     return 10*np.log10(np.sum(10**(spls/10)))
 
 
@@ -207,6 +222,9 @@ def power_spectrum_to_db(
     power_spectrum,
     pressure_reference=Recording.pressure_reference,
 ):
+    """
+    Transforms a Power Spectrum with Pascal units to dB Spectrum
+    """
     amplitude_spectrum = np.sqrt(power_spectrum)
     return 20*np.log10(amplitude_spectrum/pressure_reference)
 
@@ -241,6 +259,11 @@ def combine_power_spectrum(
 def read_third_octave_band_csv(
     csv_path,
 ):
+    """
+    Read the 3rd octave band frequencies from the csv file and outputs
+    a list with e.g. 
+        [{'f_lower': 10.0, 'f_mid': 12.5, 'f_upper': 14.0}, {...]
+    """
     frequencies = []
     with open(csv_path, newline='') as csvfile:
         reader = csv.DictReader(csvfile)
@@ -256,6 +279,11 @@ def read_third_octave_band_csv(
 def read_a_weights_csv(
     csv_path,
 ):
+    """
+    Read A-weighted values from csv file and returning it as a dictionary
+    with mid frequency as str as key and weight as value, e.g.
+        {'12.5': -20.3, ... }
+    """
     a_weights = {}
     with open(csv_path, newline='') as csvfile:
         reader = csv.DictReader(csvfile)
@@ -270,6 +298,10 @@ def generate_third_octave(
     power_spectrum_frequencies,
     third_octave_frequencies,
 ):
+    """
+    Transforms a constant bandwidth power spectrum to a 3rd octave
+    band spectrum
+    """
     # Generate Indexes to fetch from power spectrum
     lower_index = 0
     indexes = []
@@ -309,6 +341,9 @@ def add_a_weighting(
     third_octave_frequencies,
     a_weights,
 ):
+    """
+    Adds A-weighting to a 3rd octave band power spectrum.
+    """
     a_weighted_spectrum = []
     for index, freq in enumerate(third_octave_frequencies):
         a_weighted_spectrum.append(
@@ -325,6 +360,10 @@ def generate_plot(
     a_weighted_third_octave_spectrum,  # dB
     third_octave_spectrum_frequencies,
 ):
+    """
+    Generate the plot for FFT, 3rd Octave band, and A-weighted 
+    3rd Octave band, similar to Figure 2 in L9
+    """
     fig, ax = plt.subplots(1,1)
 
     freqs, spectrum = combine_power_spectrum(
@@ -351,6 +390,10 @@ def calculate_short_sequence_spl(
     time_length,
     samplerate,
 ):
+    """
+    Calculate the Sound Pressure Level for a short sequence with time
+    constant given by time_length.
+    """
     cal_pressure = generate_short_series(
         sampled_data=calibrated_recording,
         time_length=time_length,
