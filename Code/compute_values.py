@@ -8,7 +8,6 @@ import numpy as np
 import scipy.io.wavfile as wav
 import scipy.signal as sig
 
-logging.basicConfig(level=logging.INFO)
 
 ntnu_dir_path = pathlib.Path('/home') / 'nbresina' / 'Documents' / 'NTNU'
 assignment_path = ntnu_dir_path / 'TechnicalAcoustics' / 'Assignments' / '0'
@@ -33,64 +32,67 @@ class Recording:
 
     def __init__(
         self,
-        ref_pre_path: pathlib.Path,
-        rec_data_path: pathlib.Path,
-        ref_post_path: pathlib.Path,
+        file_path,
+        calibration_factor_pre=1.6831914497821373e-09,
+        calibration_factor_post=1.8531190247712699e-09,
+    ):
+        """
+        Generates a Recording object from a file using the provided path. It uses
+        hardcoded defaults which were computed from the reference recordings.
+        """
+        logging.info("------------- Reading WAV files -------------")
+        self._samplerate, self._recording = wav.read(file_path)
+
+        self._cal_factor_pre = calibration_factor_pre
+        self._cal_factor_post = calibration_factor_post
+
+        self._window = np.ones(len(self._recording))
+
+    @classmethod
+    def from_recordings(
+        cls,
+        recording_path: pathlib.Path,
+        reference_pre_recording_path: pathlib.Path,
+        reference_post_recording_path: pathlib.Path,
     ):
         # Read Data
-        logging.info("------------- Reading WAV files -------------")
-        samplerate, ref_pre = wav.read(ref_pre_path)
+        logging.info("------------- Reading Reference Files -------------")
+        samplerate, ref_pre = wav.read(reference_pre_recording_path)
         logging.info(f"ref_pre samplerate: {samplerate}")
-        samplerate,  ref_post = wav.read(ref_post_path)
+        samplerate,  ref_post = wav.read(reference_post_recording_path)
         logging.info(f"ref_post samplerate: {samplerate}")
-        samplerate, recording = wav.read(rec_data_path)
-        logging.info(f"rec samplerate: {samplerate}")
 
-        self._samplerate = samplerate
-        self._ref_pre = ref_pre
-        self._ref_post = ref_post
-        self._recording = recording
-
-        # Calculate RMS in Digital Time Domain
+        # Calculate RMS in Digital-Time/Sample Domain
         logging.info("--------------- Digital RMS -----------------")
         digital_ref_rms_pre = root_mean_square(
-            sampled_data=self._ref_pre,
+            sampled_data=ref_pre,
         )
         logging.info(f"Digital RMS Pre: {digital_ref_rms_pre:.3e}")
 
         digital_ref_rms_post = root_mean_square(
-            sampled_data=self._ref_post,
+            sampled_data=ref_post,
         )
         logging.info(f"Digital RMS Post: {digital_ref_rms_post:.3e}")
 
-        # Calibrate measured signal
+        # Calculate Calibration Factors from the Reference Recordings
         logging.info("----------- Calibration Factor --------------")
-        self._cal_factor_pre = calibration_factor(
+        calibration_factor_pre = calibration_factor(
             digital_ref_rms=digital_ref_rms_pre,
-            physical_ref_rms=self.pressure_calibrator,
+            physical_ref_rms=cls.pressure_calibrator,
         )
-        logging.info(f"Calibration Factor Pre: {self._cal_factor_pre:.3e}")
+        logging.info(f"Calibration Factor Pre: {calibration_factor_pre:.3e}")
 
-        self._cal_factor_post = calibration_factor(
+        calibration_factor_post = calibration_factor(
             digital_ref_rms=digital_ref_rms_post,
-            physical_ref_rms=self.pressure_calibrator,
+            physical_ref_rms=cls.pressure_calibrator,
         )
-        logging.info(f"Calibration Factor Post: {self._cal_factor_post:.3e}")
+        logging.info(f"Calibration Factor Post: {calibration_factor_post:.3e}")
 
-        # Generate Window
-        self._window = sig.windows.get_window(
-            window=('kaiser', 4.0),
-            Nx=len(self.recording),
-            fftbins=False,
+        return Recording(
+            file_path=recording_path,
+            calibration_factor_pre=calibration_factor_pre,
+            calibration_factor_post=calibration_factor_post,
         )
-
-    @property
-    def reference_pre(self):
-        return self._ref_pre
-
-    @property
-    def reference_post(self):
-        return self._ref_post
 
     @property
     def recording(self):
@@ -362,12 +364,11 @@ def generate_plot(
     plt.show()
 
 
-
-if __name__ == '__main__':
-    recording = Recording(
-        ref_pre_path=samfundet_ref_pre_path,
-        rec_data_path=samfundet_rec_path,
-        ref_post_path=samfundet_ref_post_path,
+def main():
+    recording = Recording.from_recordings(
+        recording_path=samfundet_rec_path,
+        reference_pre_recording_path=samfundet_ref_pre_path,
+        reference_post_recording_path=samfundet_ref_post_path,
     )
 
     # Calculate calibrated RMS pressures
@@ -381,7 +382,6 @@ if __name__ == '__main__':
         f"Pressure RMS calibrated with Post: {cal_pressure_rms_post:.3f} Pa",
     )
 
-
     # Calculate dB for calibration signal
     #logging.info("-------- SPL for calibration Signal ---------")
     #freq, spl = get_max_spl(
@@ -394,7 +394,6 @@ if __name__ == '__main__':
     #    samplerate=recording.samplerate,
     #)
     #logging.info(f"Post: {spl:.3f} dB at {freq:.3f} Hz")
-
 
     # Calculate SPL
     logging.info("------------- Calibrated SPL ----------------")
@@ -440,33 +439,24 @@ if __name__ == '__main__':
 
     # Calculate FFT
     power_spectrum_pre = power_spectrum(recording.calibrated_pre)
-    power_spectrum_pre_windowed = power_spectrum(recording.windowed_calibrated_pre)
     power_spectrum_frequencies = np.fft.fftfreq(
         d=1/recording.samplerate,
         n=len(power_spectrum_pre),
     )
 
     power_time_domain_ = power_time_domain(recording.calibrated_pre)
-    power_time_domain_windowed = power_time_domain(recording.windowed_calibrated_pre)
     power_freq_domain = power_frequency_domain(
         power_spectrum=power_spectrum_pre,
-    )
-    power_freq_domain_windowed = power_frequency_domain(
-        power_spectrum=power_spectrum_pre_windowed,
     )
 
     logging.info("--------------- Power Values ----------------")
     logging.info(f"Power in Time Domain: {power_time_domain(recording.calibrated_pre):.3f}")
-    logging.info(f"Power in Time Domain Windowed: {power_time_domain_windowed:.3f}")
     logging.info(f"Power in Frequency Domain: {power_freq_domain:.3f}")
-    logging.info(f"Power in Frequency Domain Windowed: {power_freq_domain_windowed:.3f}")
 
     # Calculate SPL from Frequency Domain
     spl_freq = sum_spl(power_spectrum_to_db(power_spectrum_pre))
-    spl_freq_windowed = sum_spl(power_spectrum_to_db(power_spectrum_pre_windowed))
     logging.info("--------- SPL from Frequency Domain ---------")
     logging.info(f"SPL: {spl_freq:.3f} dB")
-    logging.info(f"SPL windowed: {spl_freq_windowed:.3f} dB")
 
     # Calculate Third Octave Band
     third_octave_frequencies = read_third_octave_band_csv(
@@ -504,4 +494,8 @@ if __name__ == '__main__':
     )
 
     logging.info("------------------- Done --------------------")
+
+if __name__ == '__main__':
+    logging.basicConfig(level=logging.INFO)
+    main()
 
