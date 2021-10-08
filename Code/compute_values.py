@@ -18,9 +18,8 @@ samfundet_ref_pre_path = samfundet_folder_path / 'ZOOM0004_reference_pre' / 'ZOO
 samfundet_rec_path = samfundet_folder_path / 'ZOOM0007_samfundet' / 'ZOOM0007_Noise_Rec_30min.wav'
 samfundet_ref_post_path = samfundet_folder_path / 'ZOOM0008_reference_post' / 'ZOOM0008_Tr1.WAV'
 
-code_path = assignment_path / 'Code'
-a_weights_csv = code_path / 'a_weights.csv'
-third_octave_csv = code_path / 'third_octave_frequencies.csv'
+a_weights_csv = pathlib.Path('a_weights.csv')
+third_octave_csv = pathlib.Path('third_octave_frequencies.csv')
 
 
 class Recording:
