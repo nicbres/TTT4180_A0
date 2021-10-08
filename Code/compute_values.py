@@ -203,7 +203,7 @@ def power_frequency_domain(
     power_spectrum,
 ):
     """
-    Computes the power from forward scaled power spectrum, which entails 
+    Computes the power from forward scaled power spectrum, which entails
     multiplying with the scaling factor due to |X(k)|^2
     """
     return np.sum(power_spectrum)*len(power_spectrum)
@@ -261,7 +261,7 @@ def read_third_octave_band_csv(
 ):
     """
     Read the 3rd octave band frequencies from the csv file and outputs
-    a list with e.g. 
+    a list with e.g.
         [{'f_lower': 10.0, 'f_mid': 12.5, 'f_upper': 14.0}, {...]
     """
     frequencies = []
@@ -361,7 +361,7 @@ def generate_plot(
     third_octave_spectrum_frequencies,
 ):
     """
-    Generate the plot for FFT, 3rd Octave band, and A-weighted 
+    Generate the plot for FFT, 3rd Octave band, and A-weighted
     3rd Octave band, similar to Figure 2 in L9
     """
     fig, ax = plt.subplots(1,1)
