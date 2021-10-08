@@ -448,8 +448,10 @@ def generate_spl_series_plot(
     time_stamps_a = np.arange(len(spl_series_a))*time_constant_a
     time_stamps_b = np.arange(len(spl_series_b))*time_constant_b
 
-    ax.step(time_stamps_a, spl_series_a, where="mid", label=f"T={time_constant_a:.1e}")
-    ax.step(time_stamps_b, spl_series_b, where="mid", label=f"T={time_constant_b:.1e}")
+    ax.step(time_stamps_a, spl_series_a, where="mid", label=f"T={time_constant_a:.1e}s")
+    ax.step(time_stamps_b, spl_series_b, where="mid", label=f"T={time_constant_b:.1e}s")
+    ax.set_xlabel("Time [s]")
+    ax.set_ylabel("Relative SPL [dB]")
     ax.legend()
     ax.grid()
     logging.info("------------------ Plotting -----------------")
