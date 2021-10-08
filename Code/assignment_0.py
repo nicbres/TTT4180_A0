@@ -48,12 +48,25 @@ if __name__ == "__main__":
             filename=args.log_file,
             filemode='w' if args.log_file else None,
             level=logging.DEBUG if args.debug else logging.INFO,
+            format="%(levelname)s: %(asctime)s: %(message)s",
+            datefmt="%Y-%m-%d %H:%M:%S",
         )
 
         if args.input_file is not None:
-            # hardcoded calibration factors computed with reference recordings
-            calibration_factor_pre = 1.6831914497821373e-09
-            calibration_factor_post = 1.8531190247712699e-09
+            recording = compute_values.Recording(
+                file_path=args.input_file,
+            )
+            logging.info("## Compute Values for Pre-Recording Reference ##")
+            compute_values.compute_values(
+                calibrated_recording=recording.calibrated_pre,
+                samplerate=recording.samplerate,
+            )
+            logging.info("## Compute Values for Post-Recording Reference ##")
+            compute_values.compute_values(
+                calibrated_recording=recording.calibrated_post,
+                samplerate=recording.samplerate,
+                plot=True,
+            )
 
         elif args.run_all:
             compute_values.main()
