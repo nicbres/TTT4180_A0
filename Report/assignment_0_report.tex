@@ -55,7 +55,7 @@ are street vehicles or just traffic noise in short.
 % TODO insert coordinates as reference
 
 The microphone was setup pointing directly to the intersection, where the closest point of sound generation
-was roughly $4\textrm{m}$ away (Figure \ref{fig:recording_site_setup}).
+was roughly $4\textrm{m}$ away (Fig. \ref{fig:recording_site_setup}).
 Some of the sounds recorded are from sources up to $50\textrm{m}$ and more away from the microphone.
 
 The recording took place on Sunday, 12th September 2021 between 12:45 and 13:45.
@@ -140,7 +140,7 @@ The code written provides a small CLI interface to trigger the computations for 
 values of interest.
 
 \section{Results}
-The following results were produced from a $30\textrm{min}$ piece of the recording, unless stated otherwise.
+The following results were produced from a $30\textrm{min}$ piece of the recording.
 Due to difference in the gains before and after the recording, the values are given with a $pre$ and $post$ suffix,
 indicating calibration with the reference before and after recording respectively.
 
@@ -154,24 +154,29 @@ indicating calibration with the reference before and after recording respectivel
 \end{aligned}
 \end{equation}
 
-\item[SPL for sequences] are calculated for the time constants of $1\textrm{s}$ and $125\textrm{ms}$.
+\item[SPL for sequences] are computed for the time constants of $1\textrm{s}$ and $0.125\textrm{s}$.
+    The full recording was sliced into pieces according to the time constants.
+    And then the SPLs were calculated for every slice, which results in the plots given by the Figures
+    \ref{fig:time_constant_1s} and \ref{fig:time_constant_125ms}.
 
-\begin{equation}
-\begin{aligned}
-    L_{eq,1s,pre} & = 78.0 \textrm{ dB} \\
-    L_{eq,1s,post} & = 78.8 \textrm{ dB} \\
-\end{aligned}
-\end{equation}
+\begin{figure}
+    \centering
+    \includegraphics[width=75mm]{./Images/time_constant_spl_1s.png}
+    \caption{Time Series of SPL with Time Constant set to $1\textrm{s}$}
+    \label{fig:time_constant_1s}
+\end{figure}
 
-\begin{equation}
-\begin{aligned}
-    L_{eq,125ms,pre} & = 75.5 \textrm{ dB} \\
-    L_{eq,125ms,post} & = 76.4 \textrm{ dB} \\
-\end{aligned}
-\end{equation}
+\begin{figure}
+    \centering
+    \includegraphics[width=75mm]{./Images/time_constant_spl_125ms.png}
+    \caption{Time Series of SPL with Time Constant set to $0.125\textrm{s}$}
+    \label{fig:time_constant_125ms}
+\end{figure}
 
-\item[A-weighted SPL total] is computed from the third-octave-band power spectrum adjusted with the weighting
-    shown in Fig. \ref{fig:power_spectrum}
+\item[A-weighted SPL total] is computed from the 3rd octave band power spectrum adjusted with the
+    corresponding weighting.
+    %TODO add reference
+    The results are shown in Fig. \ref{fig:power_spectrum}
 
 \begin{equation}
 \begin{aligned}
@@ -180,7 +185,7 @@ indicating calibration with the reference before and after recording respectivel
 \end{aligned}
 \end{equation}
 
-\item[Power Spectrum] can be seen in Fig. \ref{fig:power_spectrum}.
+\item[Power Spectrum] attained with the FFT can be seen in Fig. \ref{fig:power_spectrum}.
     It shows a spectrum with constant bandwidth of $1\textrm{Hz}$.
     Summing up all the SPLs from that spectrum then results in
 
@@ -192,6 +197,9 @@ indicating calibration with the reference before and after recording respectivel
 \end{equation}
 
 \item[3rd octave bands] spectrum is also displayed in Fig. \ref{fig:power_spectrum}.
+    The spectrum was generated from the FFT spectrum by using a table of low-, mid-, and
+    upper-frequencies of the bands.
+    %TODO add reference
     The total SPL calculated from this spectrum is given by
 
 \begin{equation}
@@ -206,7 +214,7 @@ indicating calibration with the reference before and after recording respectivel
 \begin{figure}[H]
     \centering
     \includegraphics[width=75mm]{./Images/spectrum_plot_step.png}
-    \caption{Power Spectrum for the FFT, Third-Octave-Bands, and the A-weighted Third-Octave-Bands using the
+    \caption{Power Spectrum for the FFT, 3rd octave bands, and the A-weighted 3rd octave bands using the
     pre-recording reference for calibration}
     \label{fig:power_spectrum}
 \end{figure}
