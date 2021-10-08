@@ -183,19 +183,23 @@ def generate_time_constant_spl_series(
     """
     logging.debug("Calculating new indexes")
     new_indexes = (np.arange(len(calibrated_recording))/samplerate/time_constant).astype(int)
-    pressure_values = [ [] for _ in np.arange(np.max(new_indexes)+1) ]
-    time_constant_spl = np.zeros(np.max(new_indexes)+1)
 
     logging.debug("Preparing time slices")
-    indexes = None
+    ranges = []
+    lower_index = 0
+    current_index = 0
     for index, new_index in enumerate(new_indexes):
-        pressure_values[new_index].append(calibrated_recording[index])
+        if current_index < new_index:
+            current_index = new_index
+            ranges.append((lower_index, index-1))
+            lower_index = index
 
     logging.debug("Calculating Sound Pressure Levels")
-    for index, data_list in enumerate(pressure_values):
+    time_constant_spl = np.zeros(len(ranges))
+    for index, slice_range in enumerate(ranges):
         time_constant_spl[index] = sound_pressure_level(
             pressure_rms=root_mean_square(
-                sampled_data=np.array(data_list),
+                sampled_data=calibrated_recording[slice_range[0]:slice_range[1]],
             ),
         )
 
@@ -485,7 +489,7 @@ def compute_values(
         time_constant=time_constant_2,
     )
 
-    if True:
+    if plot:
         generate_spl_series_plot(
             spl_series_a=spl_series_1s,
             time_constant_a=time_constant_1,
