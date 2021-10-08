@@ -345,7 +345,7 @@ def generate_plot(
     ax.legend()
     ax.grid()
     logging.info("------------------ Plotting -----------------")
-    logging.info("Close to plot to continue")
+    logging.info("Close plot to continue")
     plt.show()
 
 
