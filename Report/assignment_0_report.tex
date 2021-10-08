@@ -100,7 +100,7 @@ With this calibration source the gain of the recorder was tuned to match roughly
 
 Although the recorder was transported in the provided hard case for protection, the position of the analog gain
 knob had changed from the calibration before and after the recording.
-This results in some uncertainity of the calculated SPLs, which is further adressed in Section 
+This results in some uncertainity of the calculated SPLs, which is further adressed in Section
 \ref{subsec:recorder}.
 
 \subsection{Calibration}
@@ -159,14 +159,14 @@ indicating calibration with the reference before and after recording respectivel
     And then the SPLs were calculated for every slice, which results in the plots given by the Figures
     \ref{fig:time_constant_1s} and \ref{fig:time_constant_125ms}.
 
-\begin{figure}
+\begin{figure}[H]
     \centering
     \includegraphics[width=75mm]{./Images/time_constant_spl_1s.png}
     \caption{Time Series of SPL with Time Constant set to $1\textrm{s}$}
     \label{fig:time_constant_1s}
 \end{figure}
 
-\begin{figure}
+\begin{figure}[H]
     \centering
     \includegraphics[width=75mm]{./Images/time_constant_spl_125ms.png}
     \caption{Time Series of SPL with Time Constant set to $0.125\textrm{s}$}
@@ -174,8 +174,7 @@ indicating calibration with the reference before and after recording respectivel
 \end{figure}
 
 \item[A-weighted SPL total] is computed from the 3rd octave band power spectrum adjusted with the
-    corresponding weighting.
-    %TODO add reference
+    corresponding weighting \cite{1}.
     The results are shown in Fig. \ref{fig:power_spectrum}
 
 \begin{equation}
@@ -198,9 +197,8 @@ indicating calibration with the reference before and after recording respectivel
 
 \item[3rd octave bands] spectrum is also displayed in Fig. \ref{fig:power_spectrum}.
     The spectrum was generated from the FFT spectrum by using a table of low-, mid-, and
-    upper-frequencies of the bands.
-    %TODO add reference
-    The total SPL calculated from this spectrum is given by
+    upper-frequencies of the bands \cite{2}.
+    The total SPL calculated from this spectrum is then given by
 
 \begin{equation}
 \begin{aligned}
@@ -226,28 +224,28 @@ indicating calibration with the reference before and after recording respectivel
 Initially it was planned to record the emitted noise from a construction site.
 This turned out to be more difficult than expected.
 On the first day of recording, which was a Friday, it was raining heavily.
-This resulted in recording mostly rain sounds with some background noise.
+This resulted in the recording being dominated by rain sounds.
 
 In addition to that it's highly reliant on the type of construction that's currently on-going.
 There were a number of construction sites as possible candidates.
-But on Saturday most of them had a reduced work force and didn't emit a lot of sounds
+But on the following Saturday most of them had a reduced work force and didn't produce a lot of sounds
 worth recording.
 
-Which is why we have chosen to switch to the backup plan of recording a traffic intersection.
+For those reasons we have chosen to switch to the backup plan of recording a traffic intersection.
 
 \subsection{Clipping}
 % 1 event of clipping due to incredibly loud motorcycle
 With setting the gain of the recorder to correspond to $-6 \textrm{dB}$ using the $94 \textrm{dB}$ source
 and the maximum of the recorder being at $+6 \textrm{dB}$ it allows recording SPLs up to $106 \textrm{dB}$.
-Even though this is quite loud, there were still a few rare events that caused clipping in the recording,
-e.g. a loud motorcycle passing by.
+Even though this is quite loud, there still was one event that caused clipping in the recording
+which was a loud motorcycle passing by.
 
 
 \subsection{Recorder}
 \label{subsec:recorder}
 % Gain Knobs
-One problem already mentioned in earlier sections was the analog gain knob on the recorder.
-Although being careful during transport and handling of the recorder, the gain knob was moved.
+Although being careful during transport and handling of the recorder, the gain knob was moved after
+recording the reference from the calibration source.
 Because it is unknown at which point during the recording this happened, there's uncertainty
 in the validity of the computed values.
 
@@ -264,8 +262,12 @@ signal and power spectrums, quickly filled up the available $8\textrm{Gb}$ of RA
 Enlarging the virtual RAM and being more thoughtful about ressource usage, helped minimizing this
 issue. Allowing to run the code with the complete recording.
 
+In addition to that it had to be ensured that the code did not take on the complexity of
+$\mathcal{O}\left(n^2\right)$.
+As this resulted in extremely long computation times when using the full $30\textrm{min}$ recording.
+
 \section{Conclusion}
-The recording session shows that the noise from traffic intersection ocurring mostly in the lower
+The recording session shows that the noise from traffic intersection ocurres mostly in the lower
 frequencies.
 At least if accumulated over time the high-frequency content is overshadowed by the low-frequency sounds.
 
@@ -275,13 +277,24 @@ low frequency sounds of the passing vehicles.
 
 Although having the visuals to relate the sounds to is helpful, it should be possible working with an
 unattended recording.
-Working solely with a time series of sound levels, on the other hand, is more challenging.
+Working solely with a time series of sound levels on the other hand is more challenging.
 This is mainly due to not being able to relate the sound levels to past experiences.
 For example if we have a recording, it's possible to listen to the sounds that are
 questionable and possibly identify the source.
 Which would not be the case using sound levels only.
 
 \section{References}
+
+\small
+\bibliographystyle{plain}
+\begin{thebibliography}{1}
+    \bibitem{1} (2019). \emph{A-Weighting Table} $|$ \emph{Acoustics Engineer}.
+        [online] Available at: https://acousticalengineer.com/a-weighting-table
+        [Accessed 05. October 2021]
+    \bibitem{2} Engineering ToolBox, (2010). \emph{Octave Band Frequencies}.
+        [online] Available at: https://www.engineeringtoolbox.com/octave-bands-frequency-limits-d\_1602.html
+        [Accessed 05. October 2021]
+\end{thebibliography}
 
 \end{document}
 
