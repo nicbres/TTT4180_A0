@@ -349,78 +349,56 @@ def generate_plot(
     plt.show()
 
 
-def main():
-    recording = Recording.from_recordings(
-        recording_path=samfundet_rec_path,
-        reference_pre_recording_path=samfundet_ref_pre_path,
-        reference_post_recording_path=samfundet_ref_post_path,
+def calculate_short_sequence_spl(
+    calibrated_recording,
+    time_length,
+    samplerate,
+):
+    cal_pressure = generate_short_series(
+        sampled_data=calibrated_recording,
+        time_length=time_length,
+        sample_frequency=samplerate,
+    )
+    return sound_pressure_level(
+        pressure_rms=root_mean_square(
+            sampled_data=cal_pressure,
+        ),
     )
 
-    # Calculate calibrated RMS pressures
-    logging.info("---------- Calibrated Pressure RMS ----------")
-    cal_pressure_rms_pre = root_mean_square(recording.calibrated_pre)
-    logging.info(
-        f"Pressure RMS calibrated with Pre: {cal_pressure_rms_pre:.3f} Pa",
-    )
-    cal_pressure_rms_post = root_mean_square(recording.calibrated_post)
-    logging.info(
-        f"Pressure RMS calibrated with Post: {cal_pressure_rms_post:.3f} Pa",
-    )
 
+def compute_values(
+    calibrated_recording: np.array,
+    samplerate: int,
+    plot=False,
+):
+    """
+    Calculate the values of interest and outputs them via logger.
+    """
     # Calculate SPL
-    logging.info("------------- Calibrated SPL ----------------")
-    spl_pre = sound_pressure_level(pressure_rms=cal_pressure_rms_pre)
-    logging.info(f"SPL Rec with Pre: {spl_pre:.3f} dB")
-    spl_post = sound_pressure_level(pressure_rms=cal_pressure_rms_post)
-    logging.info(f"SPL Rec with Post: {spl_post:.3f} dB")
+    logging.info("-------------- SPL from RMS -----------------")
+    cal_pressure_rms_pre = root_mean_square(calibrated_recording)
+    spl_rms = sound_pressure_level(pressure_rms=cal_pressure_rms_pre)
+    logging.info(f"SPL: {spl_rms:.3f} dB")
 
-    # Calculate SPL for 1s Sequence
-    logging.info("------ Calibrated SPL for 1s Sequence -------")
-    cal_pressure_pre_short_1s = generate_short_series(
-        sampled_data=recording.calibrated_pre,
-        time_length=1,
-        sample_frequency=recording.samplerate,
-    )
-    spl_pre_short_1s = sound_pressure_level(
-        pressure_rms=root_mean_square(
-            sampled_data=cal_pressure_pre_short_1s,
-        ),
-    )
-    logging.info(f"SPL calibrated with Pre: {spl_pre_short_1s:.3f} dB")
-
-    # Calculate SPL for 0.125s Sequence
-    logging.info("------- Calibrated SPL 125ms Sequence -------")
-    cal_pressure_pre_short_125ms = generate_short_series(
-        sampled_data=recording.calibrated_pre,
-        time_length=0.125,
-        sample_frequency=recording.samplerate,
-    )
-    spl_pre_short_125ms = sound_pressure_level(
-        pressure_rms=root_mean_square(
-            sampled_data=cal_pressure_pre_short_125ms,
-        ),
-    )
-    logging.info(f"SPL calibrated with Pre: {spl_pre_short_125ms:.3f} dB")
-
-    # Calculate FFT
-    power_spectrum_pre = power_spectrum(recording.calibrated_pre)
+    # Calculate Power Spectrum - Calibrated with Pre-Recording
+    power_spectrum_pa = power_spectrum(calibrated_recording)
     power_spectrum_frequencies = np.fft.fftfreq(
-        d=1/recording.samplerate,
-        n=len(power_spectrum_pre),
+        d=1/samplerate,
+        n=len(power_spectrum_pa),
     )
 
-    power_time_domain_ = power_time_domain(recording.calibrated_pre)
-    power_freq_domain = power_frequency_domain(
-        power_spectrum=power_spectrum_pre,
+    power_in_time_domain = power_time_domain(calibrated_recording)
+    power_in_freq_domain = power_frequency_domain(
+        power_spectrum=power_spectrum_pa,
     )
 
-    logging.info("--------------- Power Values ----------------")
-    logging.info(f"Power in Time Domain: {power_time_domain(recording.calibrated_pre):.3f}")
-    logging.info(f"Power in Frequency Domain: {power_freq_domain:.3f}")
+    logging.info("---- Power Values for Parseval's Theorem ----")
+    logging.info(f"Power in Time Domain: {power_time_domain(calibrated_recording):.3f}")
+    logging.info(f"Power in Frequency Domain: {power_in_freq_domain:.3f}")
 
     # Calculate SPL from Frequency Domain
-    spl_freq = sum_spl(power_spectrum_to_db(power_spectrum_pre))
-    logging.info("--------- SPL from Frequency Domain ---------")
+    spl_freq = sum_spl(power_spectrum_to_db(power_spectrum_pa))
+    logging.info("--- SPL from Constant Bandwidth Spectrum ----")
     logging.info(f"SPL: {spl_freq:.3f} dB")
 
     # Calculate Third Octave Band
@@ -429,11 +407,11 @@ def main():
     )
     third_octave_mid_frequencies = [f['f_mid'] for f in third_octave_frequencies]
     third_octave_spectrum = generate_third_octave(
-        power_spectrum_db=power_spectrum_to_db(power_spectrum_pre),
+        power_spectrum_db=power_spectrum_to_db(power_spectrum_pa),
         power_spectrum_frequencies=power_spectrum_frequencies,
         third_octave_frequencies=third_octave_frequencies,
     )
-    logging.info("-------- SPL from Third Octave Bands --------")
+    logging.info("--------- SPL from 3rd Octave Bands ---------")
     logging.info(f"SPL: {sum_spl(third_octave_spectrum):.3f} dB")
 
     # Calculate A-Weighted Third Octave Band
@@ -447,18 +425,76 @@ def main():
         a_weights=a_weights,
     )
     third_octave_a_weighted_spl = sum_spl(third_octave_a_weighted_spectrum)
-    logging.info("--- A-weighted SPL from Third Octave Bands --")
+    logging.info("---- SPL from A-weighted 3rd Octave Bands ---")
     logging.info(f"SPL: {sum_spl(third_octave_a_weighted_spl):.3f} dB")
 
-    generate_plot(
-        power_spectrum_db=power_spectrum_to_db(power_spectrum_pre),  # dB
-        power_spectrum_frequencies=power_spectrum_frequencies,
-        third_octave_spectrum=third_octave_spectrum,  # dB
-        a_weighted_third_octave_spectrum=third_octave_a_weighted_spectrum,  # dB
-        third_octave_spectrum_frequencies=third_octave_mid_frequencies,
+    if plot:
+        generate_plot(
+            power_spectrum_db=power_spectrum_to_db(power_spectrum_pa),  # dB
+            power_spectrum_frequencies=power_spectrum_frequencies,
+            third_octave_spectrum=third_octave_spectrum,  # dB
+            a_weighted_third_octave_spectrum=third_octave_a_weighted_spectrum,  # dB
+            third_octave_spectrum_frequencies=third_octave_mid_frequencies,
+        )
+
+    logging.info("=================== Done ====================")
+
+
+def main():
+    recording = Recording.from_recordings(
+        recording_path=samfundet_rec_path,
+        reference_pre_recording_path=samfundet_ref_pre_path,
+        reference_post_recording_path=samfundet_ref_post_path,
+    )
+    logging.info("==== Values for Calibration Pre-Recording ===")
+
+    compute_values(
+        calibrated_recording=recording.calibrated_pre,
+        samplerate=recording.samplerate,
+        plot=False,
     )
 
-    logging.info("------------------- Done --------------------")
+    logging.info("=== Values for Calibration Post-Recording ===")
+
+    compute_values(
+        calibrated_recording=recording.calibrated_post,
+        samplerate=recording.samplerate,
+        plot=False,
+    )
+
+    logging.info("======= Values for Short Sequences ========")
+    # Calculate SPL for 1s Sequence
+    logging.info("----------- SPL for 1s Sequence -----------")
+    spl_pre_short_1s = calculate_short_sequence_spl(
+        calibrated_recording=recording.calibrated_pre,
+        time_length=1,
+        samplerate=recording.samplerate,
+    )
+    logging.info(f"SPL 1s Pre: {spl_pre_short_1s:.3f} dB")
+
+    spl_post_short_1s = calculate_short_sequence_spl(
+        calibrated_recording=recording.calibrated_post,
+        time_length=1,
+        samplerate=recording.samplerate,
+    )
+    logging.info(f"SPL 1s Post: {spl_post_short_1s:.3f} dB")
+
+    # Calculate SPL for 0.125s Sequence
+    logging.info("------------ SPL 125ms Sequence -------------")
+    spl_pre_short_125ms = calculate_short_sequence_spl(
+        calibrated_recording=recording.calibrated_pre,
+        time_length=0.125,
+        samplerate=recording.samplerate,
+    )
+    logging.info(f"SPL 0.125s Pre: {spl_pre_short_125ms:.3f} dB")
+
+    spl_post_short_125ms = calculate_short_sequence_spl(
+        calibrated_recording=recording.calibrated_post,
+        time_length=0.125,
+        samplerate=recording.samplerate,
+    )
+    logging.info(f"SPL 0.125s Post: {spl_post_short_125ms:.3f} dB")
+
 
 if __name__ == '__main__':
     logging.basicConfig(level=logging.INFO)
