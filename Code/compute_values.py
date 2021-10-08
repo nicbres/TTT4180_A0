@@ -46,8 +46,6 @@ class Recording:
         self._cal_factor_pre = calibration_factor_pre
         self._cal_factor_post = calibration_factor_post
 
-        self._window = np.ones(len(self._recording))
-
     @classmethod
     def from_recordings(
         cls,
@@ -55,6 +53,11 @@ class Recording:
         reference_pre_recording_path: pathlib.Path,
         reference_post_recording_path: pathlib.Path,
     ):
+        """
+        This constructor can be used to compute the calibration factors from
+        the given recordings and instantiate a Recording object with the
+        resulting values.
+        """
         # Read Data
         logging.info("------------- Reading Reference Files -------------")
         samplerate, ref_pre = wav.read(reference_pre_recording_path)
@@ -117,23 +120,21 @@ class Recording:
         return self._recording*self._cal_factor_post
 
     @property
-    def window(self):
-        return self._window
-
-    @property
-    def windowed_calibrated_pre(self):
-        return self._recording*self._cal_factor_pre*self._window
-
-    @property
-    def windowed_calibrated_post(self):
-        return self._recording*self._cal_factor_post*self._window
-
-    @property
     def calibration_factor_pre(self):
+        """
+        Returns the calibration factor that can be used to transform the digital
+        values to actual pressure values in Pascal. This is factor is generated
+        by the reference that was generated pre-recording.
+        """
         return self._cal_factor_pre
 
     @property
     def calibration_factor_post(self):
+        """
+        Returns the calibration factor that can be used to transform the digital
+        values to actual pressure values in Pascal. This is factor is generated
+        by the reference that was generated post-recording.
+        """
         return self._cal_factor_post
 
 
@@ -400,13 +401,6 @@ def main():
         ),
     )
     logging.info(f"SPL calibrated with Pre: {spl_pre_short_125ms:.3f} dB")
-
-    # Generate Windowed Signals
-    window = sig.windows.get_window(
-        window=('kaiser', 4.0),
-        Nx=len(recording.calibrated_pre),
-        fftbins=False,
-    )
 
     # Calculate FFT
     power_spectrum_pre = power_spectrum(recording.calibrated_pre)
