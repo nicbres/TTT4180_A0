@@ -181,14 +181,21 @@ def generate_time_constant_spl_series(
     """
     Generation of sound level series with given time constant
     """
+    logging.debug("Calculating new indexes")
     new_indexes = (np.arange(len(calibrated_recording))/samplerate/time_constant).astype(int)
-    time_constant_spl = np.zeros(np.max(new_indexes))
+    pressure_values = [ [] for _ in np.arange(np.max(new_indexes)+1) ]
+    time_constant_spl = np.zeros(np.max(new_indexes)+1)
 
-    for index in np.arange(np.max(new_indexes)):
-        args = np.argwhere(new_indexes == index)
+    logging.debug("Preparing time slices")
+    indexes = None
+    for index, new_index in enumerate(new_indexes):
+        pressure_values[new_index].append(calibrated_recording[index])
+
+    logging.debug("Calculating Sound Pressure Levels")
+    for index, data_list in enumerate(pressure_values):
         time_constant_spl[index] = sound_pressure_level(
             pressure_rms=root_mean_square(
-                sampled_data=calibrated_recording[args],
+                sampled_data=np.array(data_list),
             ),
         )
 
@@ -461,28 +468,29 @@ def compute_values(
     logging.info(f"SPL: {spl_rms:.3f} dB")
 
     # Calculate SPL series with time constants
-    logging_info("-- Generate SPL Series with Time constants --")
-    time_contant_1 = 1
+    logging.info("-- Generate SPL Series with Time constants --")
+    time_constant_1 = 1
     logging.info(f"------------ T={time_constant_1} -----------")
     spl_series_1s = generate_time_constant_spl_series(
         calibrated_recording=calibrated_recording,
         samplerate=samplerate,
-        time_constant=1,
+        time_constant=time_constant_1,
     )
 
+    time_constant_2 = 0.125
     logging.info(f"------------ T={time_constant_2} -----------")
     spl_series_125ms = generate_time_constant_spl_series(
         calibrated_recording=calibrated_recording,
         samplerate=samplerate,
-        time_constant=0.125,
+        time_constant=time_constant_2,
     )
 
-    if plot:
+    if True:
         generate_spl_series_plot(
             spl_series_a=spl_series_1s,
-            time_constant_a=1,
+            time_constant_a=time_constant_1,
             spl_series_b=spl_series_125ms,
-            time_constant_b=0.125,
+            time_constant_b=time_constant_2,
         )
 
     # Calculate Power Spectrum - Calibrated with Pre-Recording
